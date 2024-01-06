@@ -12,14 +12,29 @@
 
 ;;; Definisce una nuova classe, memorizzandola in una hashtable
 (defun def-class (class-name parents-list &rest parts)
-  (add-class-spec class-name
-		  (list parents-list
-			(get-fields parts)
-			(get-methods parts))))
+  (progn (if (is-class class-name)
+	     (error "La classe è già stata definita."))
+	 (if (not (parents-exist parents-list))
+	     (error "Una o più classi parent non sono definite."))
+	 (add-class-spec class-name
+			 (list parents-list
+			       (inherit-field-type
+				(get-fields parts)
+				(inherite-fields-from-parents parents-list))
+			       (get-methods parts)))))
+
+;;; OK
+(defun parents-exist (parents-list)
+  (cond ((null parents-list) T)
+	((is-class (car parents-list))
+	 (parents-exist (cdr parents-list)  ))))
 
 ;;; Crea e ritorna una lista rappresentante un'istanza, senza salvarla.
 (defun make (class-name &rest args)
-  (cond ((is-class class-name)
+  (cond ((and (equal (length args) 1)
+	      (is-instance (car args) class-name))
+	 (car args))
+	((is-class class-name)
 	 (list 'oolinst
 	       class-name
 	       (update-fields (append-fields-lists
@@ -46,32 +61,73 @@
 (defun is-instance (instance &optional (class T))
   (if (equal (car instance) 'oolinst)
       (if (equal class T)
-	  T
-	  (is-derivated-class (cadr instance) class))
+	  (or (subtypep (type-of (caddr instance)) (cadr instance))
+	      (is-class (cadr instance)))
+	  (and (is-subtype-of (cadr instance) class)
+	       (or (subtypep (type-of (caddr instance)) (cadr instance))
+		   (is-class (cadr instance)))))
       NIL))
 
-(defun field (instance field)
-  (field-in-fields-list field (caddr instance)))
 
+
+(defun field (instance field)
+  (if (field-in-fields-list field (caddr instance))
+      (field-in-fields-list field (caddr instance))
+      (error "unknown field.")))
+				  
+; OK estrae dalla lista di parti tutti i campi e ritorna una lista
+; di campi ((nome1 istanza1) (nome2 istanza2) ...)
 (defun get-fields (parts)
   (cond ((null parts) '())
 	((equal (caar parts) 'fields)
 	 (append (recursive-validate-fields (cdar parts))
-	       (get-fields (cdr parts))))
+		 (get-fields (cdr parts))))
 	(T (get-fields (cdr parts)))))
 
+;OK ritorna una lista di campi ((nome1 istanza1) (nome2 istanza2) ...)
 (defun recursive-validate-fields (fields)
   (if (null fields)
       '()
       (append (list (validate-field (car fields)))
 	      (recursive-validate-fields (cdr fields)))))
 
+; OK ritorna una lista (nome-campo istanza)
 (defun validate-field (field)
   (cond ((equal (length field) 2)
 	 (list (car field) (make 'T (cadr field))))
 	((equal (length field) 3)
 	 (list (car field) (make (caddr field) (cadr field))))))
 
+(defun inherit-field-type (fields-list parents-fields-list)
+  (cond ((null fields-list) '())
+	((null parents-fields-list) fields-list)
+	((and (equal (caar fields-list) (caar parents-fields-list))
+	      (equal (cadadr (car fields-list)) 'T))
+	 (if (is-instance (list 'oolinst
+				(cadadr (car parents-fields-list))
+				(caddr (cadr (car fields-list)))))
+	     (append (list (list (caar fields-list)
+				 (list 'oolinst
+				       (cadadr (car parents-fields-list))
+				       (caddr (cadr (car fields-list))))))
+		     (inherit-field-type (cdr fields-list)
+					 (cdr parents-fields-list)))
+	     (error "Invalid value for a field.")))
+	((equal (caar fields-list) (caar parents-fields-list))
+	 (if (is-subtype-of (cadadr (car fields-list))
+			    (cadadr (car parents-fields-list)))
+	     (append (list (car fields-list))
+		     (inherit-field-type
+		      (cdr fields-list)
+		      (cdr parents-fields-list)))
+	     (error "Un campo è più ampio del tipo del campo parent.")))
+	(T (append (inherit-field-type (list (car fields-list))
+				       (cdr parents-fields-list))
+		   (inherit-field-type (cdr fields-list)
+				       parents-fields-list)))))
+
+; OK estrae da una lista di parti tutti i metodi, dopo aver definito delle
+; funzioni trampolino per essi.
 (defun get-methods (parts)
   (cond ((null parts) '())
 	((equal (caar parts) 'methods)
@@ -79,6 +135,8 @@
 		 (get-methods (cdr parts))))
 	(T (get-methods (cdr parts)))))
 
+; OK ritorna una lista di funzioni lambda (una per ogni membro)
+;;; dopo aver creato le funzioni trampolino
 (defun recursive-process-methods (methods)
   (if (null methods)
       '()
@@ -95,6 +153,7 @@
 		 (append (list this) args))))
   (rewrite-method-code method-name method-spec))
 
+;;; OK
 ;;; Riscrive un metodo come una funzione lambda, con un parametro aggiuntivo
 ;;; this che rappresenta l'istanza.
 (defun rewrite-method-code (method-name method-spec)
@@ -146,21 +205,17 @@
       list1))
 
 
+(defun is-subtype-of (subclass parent-class)
+  (cond ((equal parent-class 'T) T)
+	((equal subclass parent-class) T)
+	((subtypep subclass parent-class) T)
+	((is-derivated-class subclass parent-class) T)))
 
 ;OK e discendenti
 (defun is-derivated-class (derivated-class parent-class)
   (cond ((equal derivated-class parent-class))
 	((are-derivated-parents (class-spec-parents derivated-class)
 				parent-class))))
-	 
-(defun are-derivated-parents (parents-list parent-class)
-  (cond ((null parents-list) NIL)
-	((equal (car parents-list) parent-class))
-	((are-derivated-parents (class-spec-parents (car parents-list))
-				parent-class))
-	((are-derivated-parents (cdr parents-list) parent-class))))
-
-
 
 (defun parents-method (parents-list method-name)
   (cond ((null parents-list) NIL)

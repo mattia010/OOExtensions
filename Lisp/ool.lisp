@@ -13,21 +13,23 @@
 ;;; Definisce una nuova classe, memorizzandola in una hashtable
 (defun def-class (class-name parents-list &rest parts)
   (progn (if (is-class class-name)
-	     (error "La classe è già stata definita."))
+	     (error "Class already defined."))
 	 (if (not (parents-exist parents-list))
-	     (error "Una o più classi parent non sono definite."))
-	 (add-class-spec class-name
-			 (list parents-list
-			       (inherit-field-type
-				(get-fields parts)
-				(inherite-fields-from-parents parents-list))
-			       (get-methods parts)))))
+	     (error "One or more parent classes are not defined."))
+	 (progn (add-class-spec
+		 class-name
+		 (list parents-list
+		       (inherit-field-type
+			(get-fields parts)
+			(inherite-fields-from-parents parents-list))
+		       (get-methods parts)))
+		class-name)))
 
 ;;; OK
 (defun parents-exist (parents-list)
   (cond ((null parents-list) T)
 	((is-class (car parents-list))
-	 (parents-exist (cdr parents-list)  ))))
+	 (parents-exist (cdr parents-list)))))
 
 ;;; Crea e ritorna una lista rappresentante un'istanza, senza salvarla.
 (defun make (class-name &rest args)
@@ -59,21 +61,32 @@
 ;;; Verifica se il parametro è un'istanza valida ed, eventualmente, se è
 ;;; istanza di una certa classe.
 (defun is-instance (instance &optional (class T))
-  (if (equal (car instance) 'oolinst)
+  (if (and (listp instance)
+	   (equal (car instance) 'oolinst))
       (if (equal class T)
-	  (or (subtypep (type-of (caddr instance)) (cadr instance))
-	      (is-class (cadr instance)))
+	  (or (is-class (cadr instance))
+	      (subtypep (type-of (caddr instance)) (cadr instance)))
 	  (and (is-subtype-of (cadr instance) class)
-	       (or (subtypep (type-of (caddr instance)) (cadr instance))
-		   (is-class (cadr instance)))))
+	       (or (is-class (cadr instance))
+		   (subtypep (type-of (caddr instance)) (cadr instance)))))
       NIL))
 
 
 
 (defun field (instance field)
-  (if (field-in-fields-list field (caddr instance))
-      (field-in-fields-list field (caddr instance))
-      (error "unknown field.")))
+  (if (is-instance instance)
+      (if (field-in-fields-list (symbol-name field) (caddr instance))
+	  (field-in-fields-list (symbol-name field) (caddr instance))
+	  (error "unknown field."))
+      (error "Instance expected as parameter!")))
+
+(defun field* (instance &rest fields-name-list)
+  (if (not (equal (length fields-name-list) 0))
+      (cond ((equal (length fields-name-list) 1)
+	     (field instance (car fields-name-list)))
+	    (T (field* (field instance (car fields-name-list))
+		       (cdr fields-name-list))))
+      (error "List of fields name is empty")))
 				  
 ; OK estrae dalla lista di parti tutti i campi e ritorna una lista
 ; di campi ((nome1 istanza1) (nome2 istanza2) ...)
@@ -94,9 +107,9 @@
 ; OK ritorna una lista (nome-campo istanza)
 (defun validate-field (field)
   (cond ((equal (length field) 2)
-	 (list (car field) (make 'T (cadr field))))
+	 (list (symbol-name (car field)) (make 'T (cadr field))))
 	((equal (length field) 3)
-	 (list (car field) (make (caddr field) (cadr field))))))
+	 (list (symbol-name (car field)) (make (caddr field) (cadr field))))))
 
 (defun inherit-field-type (fields-list parents-fields-list)
   (cond ((null fields-list) '())
@@ -120,7 +133,7 @@
 		     (inherit-field-type
 		      (cdr fields-list)
 		      (cdr parents-fields-list)))
-	     (error "Un campo è più ampio del tipo del campo parent.")))
+	     (error "A field type is supertype of an inherited one")))
 	(T (append (inherit-field-type (list (car fields-list))
 				       (cdr parents-fields-list))
 		   (inherit-field-type (cdr fields-list)
@@ -172,7 +185,7 @@
 
 (defun update-fields (old-fields args)
   (cond ((null args) old-fields)
-	((field-in-fields-list (car args) old-fields)
+	((field-in-fields-list (symbol-name (car args)) old-fields)
 	 (update-fields (update-field old-fields
 				      (list (car args) (cadr args)))
 			(cddr args)))
@@ -180,7 +193,7 @@
 
 (defun update-field (old-fields field)
   (cond ((null old-fields) (error "Field not found"))
-	((equal (caar old-fields) (car field))
+	((equal (caar old-fields) (symbol-name (car field)))
 	 (append (list (list (caar old-fields)
 			     (make (cadr (cadar old-fields)) (cadr field))))
 		 (cdr old-fields)))
@@ -208,14 +221,20 @@
 (defun is-subtype-of (subclass parent-class)
   (cond ((equal parent-class 'T) T)
 	((equal subclass parent-class) T)
-	((subtypep subclass parent-class) T)
-	((is-derivated-class subclass parent-class) T)))
+	((is-derivated-class subclass parent-class) T)
+	((subtypep subclass parent-class) T)))
 
 ;OK e discendenti
 (defun is-derivated-class (derivated-class parent-class)
-  (cond ((equal derivated-class parent-class))
-	((are-derivated-parents (class-spec-parents derivated-class)
-				parent-class))))
+  (is-derivated-class-helper (list derivated-class) parent-class))
+
+(defun is-derivated-class-helper (derivated-classes parent-class)
+  (cond ((null derivated-classes) NIL)
+	((equal (car derivated-classes) parent-class) T)
+	((is-derivated-class-helper (class-spec-parents
+				     (car derivated-classes))
+				    parent-class) T)
+	((is-derivated-class-helper (cdr derivated-classes) parent-class) T)))
 
 (defun parents-method (parents-list method-name)
   (cond ((null parents-list) NIL)

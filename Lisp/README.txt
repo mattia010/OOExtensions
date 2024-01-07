@@ -1,7 +1,5 @@
-# OOΛ in Common Lisp
-
-OOΛ è un'estensione object-oriented per il linguaggio Common Lisp.
-Permette di definire classi, istanziare oggetti di classi user-defined e accedere ai valori dei campi di un'istanza
+Bolognini Mattia 870401
+Nessuna collaborazione.
 
 ## Primitive
 ### DEF-CLASS
@@ -17,7 +15,7 @@ make permette di creare un'istanza della classe specificata, eventualmente inizi
 
 Sintassi: '(' make <class-name> [<field-name> <value>]* ')'.
 
-Ritorna una lista rappresentante l'istanza. Se non si vuole perdere l'accesso all'istanza, è necessario salvare la lista in una locazione, solitamente con def-parameter.
+Ritorna una lista rappresentante l'istanza. Se non si vuole perdere l'accesso all'istanza, è necessario salvare la lista in una locazione, solitamente con defparameter.
 
 ### IS-CLASS
 Verifica se il simbolo specificato è il nome di una classe.
@@ -42,7 +40,7 @@ Sintassi: '(' field <instance> <field-name> ')'
 Ritorna il valore del campo specificato.
 
 ### FIELD*
-Estrae il valore di un campo di una classe percorrendo una lista di attributi.
+Estrae il valore di un campo di un'istanza percorrendo una lista di attributi.
 
 Sintassi: '(' field* <instance> <field-name>+ ')'
 
@@ -108,7 +106,7 @@ Dato un metodo, crea la sua funzione trampolino e lo riscrive come una funzione 
 
 Sintassi: '(' process-method <method-name> <method-spec> ')'
 
-Ritorna una lista di due elementi, il cui primo elemento è il nome del metodo e il secondo e la funzione lambda associata.
+Ritorna una lista di due elementi, il cui primo elemento è il nome del metodo e il secondo è la funzione lambda associata.
 
 ### REWRITE-METHOD-CODE
 Usata come funzione helper da process-method.
@@ -116,7 +114,7 @@ Riscrive un metodo come una funzione lambda, a cui viene aggiunto come parametro
 
 Sintassi: '('rewrite-method-code <method-name> <method-spec> ')'
 
-Ritorna una lista di due elementi, il cui primo elemento è il nome del metodo e il secondo e la funzione lambda associata.
+Ritorna una lista di due elementi, il cui primo elemento è il nome del metodo e il secondo è la funzione lambda associata.
 
 ### INVOKE-METHOD
 Funzione eseguita quando viene chiamato un trampolino.
@@ -124,7 +122,7 @@ Si occupa di selezionare il migliore metodo da eseguire per una certa istanza, t
 
 Sintassi: '(' invoke-method <instance> <method-name> ')'
 
-Ritorna la funzione lambda valuata come migliore.
+Ritorna la funzione lambda considerata migliore.
 
 ### UPDATE-FIELDS
 Usata come funzione helper da make.

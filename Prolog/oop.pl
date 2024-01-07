@@ -131,13 +131,37 @@ inherit_field_type([field(FieldName1, Obj1) | FieldsRest1],
 %%% Istanzia un nuovo oggetto del tipo specificato,
 %%% a cui viene assegnato un nome.
 make(Name, Type) :-
+    ground(Name),
+    !,
     \+ point_to(Name, _),
     new(Type, Obj),
     asserta(point_to(Name, Obj)).
+make(Name, Type) :-
+    var(Name),
+    !,
+    new(Type, Obj),
+    Name = Obj.
+make(Name, Type) :-
+    new(Type, Obj),
+    Name = Obj.
+
+%%% Istanzia un nuovo oggetto del tipo specificato e lo inizializza
+%%% con gli argomenti specificati. Inoltre assegna il nome specificato
+%%% all'istanza.
 make(Name, Type, Params) :-
+    ground(Name),
+    !,
     \+ point_to(Name, _),
     new(Type, Params, Obj),
     asserta(point_to(Name, Obj)).
+make(Name, Type, Params) :-
+    var(Name),
+    !,
+    new(Type, Params, Obj),
+    Name = Obj.
+make(Name, Type, Params) :-
+    new(Type, Params, Obj),
+    Name = Obj.
 
 %%% Eredita, utilizzando un'ereditarietà depth-first left-most,
 %%% tutti i campi e i metodi dalle classi specificate.
@@ -229,22 +253,36 @@ new(Type, Params, object(Type, Fields)) :-
 %%% Inizializza i campi con i valori passati come parametro.
 %%% Se il campo è del tipo di una classe, allora il suo valore sarà una lista
 %%% di campi.
-init_fields(DefaultFields, [], DefaultFields) :- !.
-init_fields(DefaultFields, [FirstParam | Rest], Fields) :-
-    compound_name_arguments(FirstParam, =, [FieldName, NewValue]),
-    delete(DefaultFields, field(FieldName, object(Type, _)), FieldsTmp),
+init_fields(DefaultFields, [], DefaultFields) :- !.    
+init_fields([field(FieldName, object(Type, _)) | FieldsRest],
+	    [FieldName = NewValue | ParamsRest],
+	    [field(FieldName, NewObj) | ResultRest]) :-
+    !,
     new(Type, NewValue, NewObj),
-    init_fields([field(FieldName, NewObj) | FieldsTmp], Rest, Fields).
+    init_fields(FieldsRest, ParamsRest, ResultRest).
+init_fields([field(FieldName1, Obj) | FieldsRest],
+	    [FieldName2 = NewValue | ParamsRest],
+	    Result) :-
+    FieldName1 \= FieldName2,
+    !,
+    init_fields(FieldsRest, [FieldName2 = NewValue], Tmp),
+    init_fields([field(FieldName1, Obj) | Tmp], ParamsRest, Result).
 
 %%% Estrae il valore del campo di un'istanza. Se il campo è di tipo
 %%% built-in verrà ritornato il suo valore, se invece è del tipo di una
-%%% classe verrà ritornata una lista contenente tutti i campi
-%%% dell'istanza di quella classe.
+%%% classe verrà ritornata l'istanza.
 field(Ptr, Name, Value) :-
     inst(Ptr, Obj),
     !,
     field(Obj, Name, Value).
-field(object(_, [field(Name, object(_, Value)) | _]), Name, Value) :- !.
+field(object(_, [field(Name, object(Class, Value)) | _]),
+      Name,
+      object(Class, Value)) :-
+    is_class(Class),
+    !.
+field(object(_, [field(Name, object(Type, Value)) | _]), Name, Value) :-
+    is_builtin(Type),
+    !.
 field(object(_, [field(FieldName, _) | FieldsRest]), Name, Value) :-
     FieldName \= Name,
     !,
@@ -256,30 +294,18 @@ fieldx(InstanceName, FieldNames, Result) :-
     InstanceName \= object(_, _),
     !,
     fieldx(Obj, FieldNames,  Result).
-fieldx(object(_, Value), FieldNames, Result) :-
-    helper_fieldx(Value, FieldNames, Result).
-
-%%% Date due liste, una contenente una lista di campi e una contenente
-%%% una lista di nomi di campi, restituisce il valore di un campo percorrendo
-%%% una lista di campi.
-helper_fieldx(Value, [], Value) :- !.
-helper_fieldx([field(FieldName, object(_, Value)) | _],
-       [FieldName],
-       Value) :- !.
-helper_fieldx([field(FieldName1, _) | FieldsRest],
-       [FieldName],
-       Result) :-
-    FieldName1 \= FieldName,
+fieldx(object(Type, Value), [FieldName], Result) :-
     !,
-    helper_fieldx(FieldsRest, [FieldName], Result).
-helper_fieldx(FieldsList, [FieldName | FieldNameRest], Result) :-
-    FieldNameRest \= [],
+    field(object(Type, Value), FieldName, Result).
+fieldx(object(Type, Value), [FieldName | Rest], Result) :-
     !,
-    helper_fieldx(FieldsList, [FieldName], Tmp1),
-    helper_fieldx(Tmp1, FieldNameRest, Result).
+    field(object(Type, Value), FieldName, Tmp),
+    fieldx(Tmp, Rest, Result).
 
 %%% Verifica se è stata definita una classe con un certo nome.
-is_class(Name) :- class(Name, _, _, _).
+is_class(Name) :-
+    ground(Name),
+    class(Name, _, _, _).
 
 %%% Dato un nome, ritorna l'istanza con quel nome.
 inst(Ptr, Obj) :- point_to(Ptr, Obj).
@@ -307,7 +333,6 @@ is_instance(object(Type, Fields)) :-
     inherit([Type], ClassFields, _),
     forall(member(field(Name, _), Fields),
 	   member(field(Name, _), ClassFields)).
-
 %%% Verifica se un tipo è sottotipo di un altro.
 is_subtype_of(X, X) :- !.
 is_subtype_of(float, number) :- !.
@@ -328,7 +353,7 @@ helper_is_subtype_of([X | Xs], Class) :-
     !,
     helper_is_subtype_of(Xs, Class).
 
-%%% Verifica se un tipo è built-int
+%%% Verifica se un tipo è built-in
 is_builtin(void).
 is_builtin(bool).
 is_builtin(atom).

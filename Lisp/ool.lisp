@@ -1,3 +1,6 @@
+;;;; Bolognini Mattia 870401
+;;;; Nessuna collaborazione.
+
 (defparameter *classes-specs* (make-hash-table))
 
 (defun add-class-spec (class class-spec)
@@ -25,7 +28,8 @@
 		       (get-methods parts)))
 		class-name)))
 
-;;; OK
+;;; Verifica che tutti le classi parent nella lista siano classi già
+;;; definite
 (defun parents-exist (parents-list)
   (cond ((null parents-list) T)
 	((is-class (car parents-list))
@@ -34,8 +38,12 @@
 ;;; Crea e ritorna una lista rappresentante un'istanza, senza salvarla.
 (defun make (class-name &rest args)
   (cond ((and (equal (length args) 1)
-	      (is-instance (car args) class-name))
-	 (car args))
+	      (listp (car args))
+	      (equal (length (car args)) 3)
+	      (equal (caar args) 'oolinst))
+	 (if (is-subtype-of (cadar args) class-name)
+	     (list 'oolinst class-name (caddar args))
+	     (error "Args not valid for the specified type.")))
 	((is-class class-name)
 	 (list 'oolinst
 	       class-name
@@ -69,10 +77,9 @@
 	  (and (is-subtype-of (cadr instance) class)
 	       (or (is-class (cadr instance))
 		   (subtypep (type-of (caddr instance)) (cadr instance)))))
-      NIL))
+      (subtypep (type-of instance) class)))
 
-
-
+;;; Estrae da un'istanza il valore del campo specificato.
 (defun field (instance field)
   (if (is-instance instance)
       (if (field-in-fields-list (symbol-name field) (caddr instance))
@@ -80,6 +87,8 @@
 	  (error "unknown field."))
       (error "Instance expected as parameter!")))
 
+;;; Estrae da un'istanza il valore di un campo, dopo aver percorso una
+;;; lista di attributi.
 (defun field* (instance &rest fields-name-list)
   (if (not (equal (length fields-name-list) 0))
       (cond ((equal (length fields-name-list) 1)
@@ -88,8 +97,7 @@
 		       (cdr fields-name-list))))
       (error "List of fields name is empty")))
 				  
-; OK estrae dalla lista di parti tutti i campi e ritorna una lista
-; di campi ((nome1 istanza1) (nome2 istanza2) ...)
+;;; Data una lista di parti, estrae tutti i campi.
 (defun get-fields (parts)
   (cond ((null parts) '())
 	((equal (caar parts) 'fields)
@@ -97,20 +105,24 @@
 		 (get-fields (cdr parts))))
 	(T (get-fields (cdr parts)))))
 
-;OK ritorna una lista di campi ((nome1 istanza1) (nome2 istanza2) ...)
+;;; Helper per scorrere una lista di campi, in modo da poterli processare
+;;; e validare individualmente.
 (defun recursive-validate-fields (fields)
   (if (null fields)
       '()
       (append (list (validate-field (car fields)))
 	      (recursive-validate-fields (cdr fields)))))
 
-; OK ritorna una lista (nome-campo istanza)
+;;; Valida un campo e lo riscrive in una forma standard, definita
+;;; dall'estensione.
 (defun validate-field (field)
   (cond ((equal (length field) 2)
 	 (list (symbol-name (car field)) (make 'T (cadr field))))
 	((equal (length field) 3)
 	 (list (symbol-name (car field)) (make (caddr field) (cadr field))))))
 
+;;; Date due liste di campi, i campi della prima lista ereditano i tipi
+;;; dai campi della seconda lista.
 (defun inherit-field-type (fields-list parents-fields-list)
   (cond ((null fields-list) '())
 	((null parents-fields-list) fields-list)
@@ -139,8 +151,8 @@
 		   (inherit-field-type (cdr fields-list)
 				       parents-fields-list)))))
 
-; OK estrae da una lista di parti tutti i metodi, dopo aver definito delle
-; funzioni trampolino per essi.
+;;; Data una lista di parti, estrae tutti i metodi, dopo averli processati
+;;; e aver definito le funzioni trampolino.
 (defun get-methods (parts)
   (cond ((null parts) '())
 	((equal (caar parts) 'methods)
@@ -148,8 +160,8 @@
 		 (get-methods (cdr parts))))
 	(T (get-methods (cdr parts)))))
 
-; OK ritorna una lista di funzioni lambda (una per ogni membro)
-;;; dopo aver creato le funzioni trampolino
+;;; Helper per scorrere una lista di metodi, in modo tale da poterli
+;;; processare individualmente.
 (defun recursive-process-methods (methods)
   (if (null methods)
       '()
@@ -166,7 +178,6 @@
 		 (append (list this) args))))
   (rewrite-method-code method-name method-spec))
 
-;;; OK
 ;;; Riscrive un metodo come una funzione lambda, con un parametro aggiuntivo
 ;;; this che rappresenta l'istanza.
 (defun rewrite-method-code (method-name method-spec)
@@ -182,7 +193,7 @@
 	((parents-method (class-spec-parents (cadr instance)) method-name))
 	(T (error "Method does not exist!"))))
 
-
+;;; Aggiorna i campi della lista con i nuovi valori passati come argomento.
 (defun update-fields (old-fields args)
   (cond ((null args) old-fields)
 	((field-in-fields-list (symbol-name (car args)) old-fields)
@@ -191,6 +202,7 @@
 			(cddr args)))
 	(T (error "Error when specifying fields to update."))))
 
+;;; Estrae e aggiorna un singolo campo presente in una lista di campi.
 (defun update-field (old-fields field)
   (cond ((null old-fields) (error "Field not found"))
 	((equal (caar old-fields) (symbol-name (car field)))
@@ -200,6 +212,7 @@
 	(T (append (list (car old-fields))
 		   (update-field (cdr old-fields) field)))))
 
+;;; Eredita, in maniera corretta, tutti i campi dalle classi parent.
 (defun inherite-fields-from-parents (parents-list)
   (if (not (null parents-list))
       (append-fields-lists
@@ -209,6 +222,9 @@
        (inherite-fields-from-parents (cdr parents-list)))
       '()))
 
+;;; Metodo helper che permette di appendere due liste, in modo tale che alla
+;;; prima lista vengano aggiunti tutti i campi della seconda lista
+;;; non ancora presenti.
 (defun append-fields-lists (list1 list2)
   (if (not (null list2))
       (if (not (field-in-fields-list (caar list2) list1))
@@ -217,25 +233,25 @@
 	  (append-fields-lists list1 (cdr list2)))
       list1))
 
-
+;;; Verifica se un tipo è sottotipo di un altro.
 (defun is-subtype-of (subclass parent-class)
   (cond ((equal parent-class 'T) T)
 	((equal subclass parent-class) T)
-	((is-derivated-class subclass parent-class) T)
+	((is-derivated-class (list subclass) parent-class) T)
 	((subtypep subclass parent-class) T)))
 
-;OK e discendenti
-(defun is-derivated-class (derivated-class parent-class)
-  (is-derivated-class-helper (list derivated-class) parent-class))
-
-(defun is-derivated-class-helper (derivated-classes parent-class)
+;;; Verifica se almeno una classe presente nella lista di classi deriva
+;;; dalla classe parent.
+(defun is-derivated-class (derivated-classes parent-class)
   (cond ((null derivated-classes) NIL)
 	((equal (car derivated-classes) parent-class) T)
-	((is-derivated-class-helper (class-spec-parents
-				     (car derivated-classes))
-				    parent-class) T)
-	((is-derivated-class-helper (cdr derivated-classes) parent-class) T)))
+	((is-derivated-class (class-spec-parents
+			      (car derivated-classes))
+			     parent-class) T)
+	((is-derivated-class (cdr derivated-classes) parent-class) T)))
 
+;;; Ritorna il migliore metodo di nome specificato data una lista di classi
+;;; da cui si vuole ereditare il metodo.
 (defun parents-method (parents-list method-name)
   (cond ((null parents-list) NIL)
 	((method-in-methods-list method-name
@@ -243,11 +259,13 @@
 	((parents-method (class-spec-parents (car parents-list)) method-name))
 	((parents-method (cdr parents-list) method-name))))
 
+;;; Estrae un metodo da una lista di metodi.
 (defun method-in-methods-list (method-name methods-list)
   (cond ((null methods-list) NIL)
 	((equal method-name (caar methods-list)) (cadar methods-list))
 	(T (method-in-methods-list method-name (cdr methods-list)))))
 
+;;; Estrae un campo da una lista di campi.
 (defun field-in-fields-list (field fields-list)
   (cond ((null fields-list) NIL)
 	((equal field (caar fields-list))

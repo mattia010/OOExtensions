@@ -3,7 +3,8 @@ Nessuna collaborazione.
 
 ## Primitive
 ### DEF_CLASS/2
-Definisce una nuova classe senza campi e metodi e la asserisce nella base di conoscenza.
+Definisce una nuova classe senza campi e metodi 
+e la asserisce nella base di conoscenza.
 
 Sintassi: def_class(ClassName, ParentsList).
 
@@ -13,17 +14,23 @@ Definisce una nuova classe e la asserisce nella base di conoscenza.
 Sintassi: def_class(ClassName, ParentsList, PartsList).
 
 ### MAKE/2
-Crea, se non esiste, un istanza della classe specificata inizializzando i campi ai loro valori di default e le assegna il nome specificato.
+Crea, se non esiste, un'istanza della classe specificata, 
+inizializzando i campi ai loro valori di default, 
+e le assegna il nome specificato.
+La asserisce poi nella base di conoscenza.
 
 Sintassi: make(Name, ClassType).
 
 ### MAKE/3
-Crea, se non esiste, un istanza della classe specificata inizializzando i campi ai valori specificati e le assegna il nome specificato.
+Crea, se non esiste, un'istanza della classe specificata, 
+inizializzando i campi ai valori specificati, 
+e le assegna il nome specificato.
+La asserisce poi nella base di conoscenza.
 
 Sintassi: make(Name, ClassType, InitializerFieldsList).
 
 ### IS_CLASS/1
-Verifica se il parametro è una classe già definita.
+Verifica se il parametro è il nome di una classe già definita.
 
 Sintassi: is_class(Name).
 
@@ -54,7 +61,8 @@ Sintassi: fieldx(Instance, FieldsNameList, Value).
 
 ## ALTRI PREDICATI
 ### GET_METHODS_AND_FIELDS/3
-Data una lista di parti, estrae tutti i campi e tutti i metodi in due liste separate.
+Data una lista di parti, estrae tutti i campi e tutti i 
+metodi in due liste separate.
 
 Sintassi: get_methods_and_fields(PartsList, FieldsList, MethodsList).
 
@@ -64,49 +72,58 @@ Riscrive i campi in una forma standard definita dall'estensione.
 Sintassi: standardize_fields(FieldsList, StandardizedFieldsList).
 
 ### STANDARDIZE_METHODS/2
-Riscrive i metodi in modo da aggiungere il parametro This e sostituire il termine this nel corpo con la variabile
+Riscrive i metodi in modo da aggiungere il parametro This e 
+sostituire il termine this nel corpo con la variabile
 logica This.
 
-Sintassi: standardize_fields(MethodsList, StandardizeMethodsList).
+Sintassi: standardize_methods(MethodsList, StandardizedMethodsList).
 
 ### REPLACE/4
-Dato in input un termine, una variabile logica o termine composto, sostituisce un termine presente al suo interno
+Dato in input un termine, una variabile logica o termine composto, 
+sostituisce un termine presente al suo interno
 con un altro termine o variabile logica.
 
 Sintassi: replace(Replacee, Replacement, OldTerm, NewTerm).
 
 ### INHERIT_FIELD_TYPE/3
-Data una lista di campi, eredita il loro tipo da un'altra lista di campi.
+Data una lista di campi, eredita il loro tipo da un'altra 
+lista di campi.
 
 Sintassi: inherit_field_type(FieldsList1, FieldsList2, InheritedFieldsList).
 
 ### INHERIT/3
-Data una lista di classi parent, eredita tutti i campi e tutti i metodi in due liste separate.
+Data una lista di classi parent, eredita tutti i campi e 
+tutti i metodi in due liste separate.
 
 Sintassi: inherit(Classes, Fields, Methods).
 
 ### HELPER_APPEND_FIELDS/3
-Aggiunge alla prima lista tutti campi della seconda lista che non sono già presenti.
+Aggiunge alla prima lista tutti campi della seconda lista che 
+non sono già presenti.
 
 Sintassi: helper_append_fields(List1, List2, Result).
 
 ### HELPER_APPEND_METHODS/3
-Aggiunge alla prima lista tutti i metodi della seconda lista che non sono già presenti.
+Aggiunge alla prima lista tutti i metodi della seconda lista 
+che non sono già presenti.
 
 Sintassi: helper_append_methods(List1, List2, Result).
 
 ### NEW/2
-Crea un nuovo oggetto del tipo specificato e lo inizializza a un valore di default.
+Crea un nuovo oggetto del tipo specificato e lo inizializza a un 
+valore di default.
 
 Sintassi: new(Type, Object).
 
 ### NEW/3
-Crea un nuovo oggetto del tipo specificato e lo inizializza al valore specificato. Se è una classe inizializza i campi.
+Crea un nuovo oggetto del tipo specificato e lo inizializza al 
+valore specificato. Se è una classe inizializza i campi.
 
 Sintassi: new(Type, Args, Object).
 
 ### INIT_FIELDS/3
-Inizializza i campi contenuti in una lista con i valori specificati in una seconda lista.
+Inizializza i campi contenuti in una lista con i valori 
+specificati in una seconda lista.
 
 Sintassi: init_fields(Fields, Args, InitializedFields).
 
@@ -121,19 +138,23 @@ Verifica se il parametro è un tipo built-in.
 Sintassi: is_builtin(Type).
 
 ### ASSERT_TRAMPOLINES/1
-Asserisce nella base di conoscenza i predicati trampolini dei metodi contenuti nella lista.
+Asserisce nella base di conoscenza i predicati trampolini 
+dei metodi contenuti nella lista.
 
 Sintassi: assert_trampolines(MethodsList).
 
 ### INVOKE_METHOD/2
 Predicato invocato quando viene eseguito un trampolino.
-Si occupa di scegliere il miglior metodo da eseguire e di eseguirlo con gli argomenti specificati, di cui il primo
+Si occupa di scegliere il miglior metodo da eseguire e di 
+eseguirlo con gli argomenti specificati, di cui il primo
 è l'istanza su cui viene chiamato.
 
 Sintassi: invoke_method(MethodName, [Instance | Args]).
 
 ### GET_BEST_METHOD/3
-Data una lista di classi e un nome di metodo, sceglie il metodo migliore da eseguire della lista di classi, implementando un'ereditarietà depth-first left-most.
+Data una lista di classi e un nome di metodo, sceglie il 
+metodo migliore da eseguire della lista di classi, 
+implementando un'ereditarietà depth-first left-most.
 
 Sintassi: get_best_method(ClassesList, MethodName, BestMethod).
 

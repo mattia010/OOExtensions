@@ -6,7 +6,7 @@ Nessuna collaborazione.
 def-class permette di definire una nuova classe, che verrà poi salvata  in una hash table.
 
 Sintassi:
-'(' def-class <class-name> <parents> <part>* ')'.
+(def-class <class-name> <parents> <part>*)
 
 Ritorna il nome della classe se la sua costruzione è andata a buon fine.
 
@@ -33,7 +33,7 @@ Sintassi: '(' is-instance <value> [<class-name>] ')'
 Ritorna true se l'oggetto è valido e istanza della classe specificata, false altrimenti.
 
 ### FIELD
-Estrae il valore del campo specificato da un'istanza.
+Estrae da un'istanza il valore del campo specificato.
 
 Sintassi: '(' field <instance> <field-name> ')'
 
@@ -79,7 +79,7 @@ Ritorna il campo riscritto in una forma standard.
 
 ### INHERIT-FIELD-TYPE
 Data una lista di campi standardizzati e una lista di campi standardizzati ereditati, eredita i tipi dei campi.
-Un campo non può definire un tipo pià ampio dello stesso campo ereditato.
+Un campo non può definire un tipo più ampio dello stesso campo ereditato.
 
 Sintassi: '(' inherit-field-type <fields-list> <parents-fields-list> ')'
 
@@ -110,7 +110,7 @@ Ritorna una lista di due elementi, il cui primo elemento è il nome del metodo e
 
 ### REWRITE-METHOD-CODE
 Usata come funzione helper da process-method.
-Riscrive un metodo come una funzione lambda, a cui viene aggiunto come parametro this.
+Riscrive un metodo come una funzione lambda, a cui viene aggiunto un parametro this.
 
 Sintassi: '('rewrite-method-code <method-name> <method-spec> ')'
 

@@ -1,8 +1,8 @@
 Bolognini Mattia 870401
 Nessuna collaborazione.
 
-## Primitive
-### DEF-CLASS
+# Primitive
+## DEF-CLASS
 def-class permette di definire una nuova classe, che verrà poi salvata  in una hash table.
 
 Sintassi:
@@ -10,21 +10,21 @@ Sintassi:
 
 Ritorna il nome della classe se la sua costruzione è andata a buon fine.
 
-### MAKE
+## MAKE
 make permette di creare un'istanza della classe specificata, eventualmente inizializzando i campi con i valori specificati.
 
 Sintassi: '(' make <class-name> [<field-name> <value>]* ')'.
 
 Ritorna una lista rappresentante l'istanza. Se non si vuole perdere l'accesso all'istanza, è necessario salvare la lista in una locazione, solitamente con defparameter.
 
-### IS-CLASS
+## IS-CLASS
 Verifica se il simbolo specificato è il nome di una classe.
 
 Sintassi: '(' is-class <class-name> ')'
 
 Ritorna true se <class-name> è una classe, false altrimenti.
 
-### IS-INSTANCE
+## IS-INSTANCE
 Verifica se un oggetto è istanza di una determinata classe. Se non viene specificata una classe, allora essa sarà considerata T.
 Controlla anche che l'istanza sia valida.
 
@@ -32,36 +32,36 @@ Sintassi: '(' is-instance <value> [<class-name>] ')'
 
 Ritorna true se l'oggetto è valido e istanza della classe specificata, false altrimenti.
 
-### FIELD
+## FIELD
 Estrae da un'istanza il valore del campo specificato.
 
 Sintassi: '(' field <instance> <field-name> ')'
 
 Ritorna il valore del campo specificato.
 
-### FIELD*
+## FIELD*
 Estrae il valore di un campo di un'istanza percorrendo una lista di attributi.
 
 Sintassi: '(' field* <instance> <field-name>+ ')'
 
 Ritorna il valore dell'ultimo campo della lista di nomi di campi.
 
-## ALTRE FUNZIONI
-### PARENTS-EXIST
+# ALTRE FUNZIONI
+## PARENTS-EXIST
 Data una lista di classi parent, verifica che tutti gli elementi della lista siano delle classi già definite.
 
 Sintassi: '(' parents-exist <parents-list> ')'
 
 Ritorna true se tutti gli elementi della lista sono classi già definite, false altrimenti.
 
-### GET-FIELDS
+## GET-FIELDS
 Data una lista di parti (metodi + campi), estrae tutti i metodi, dopo averli riscritti in una forma standard definita dall'estensione.
 
 Sintassi: '(' get-fields <parts-list> ')'
 
 Ritorna una lista di campi standardizzati.
 
-### RECURSIVE-VALIDATE-FIELDS
+## RECURSIVE-VALIDATE-FIELDS
 Utilizzata come funzione helper da get-fields.
 Data una lista di campi non standardizzati, si occupa di riscriverli in una forma standardizzata.
 
@@ -69,7 +69,7 @@ Sintassi: '(' recursive-validate-fields <fields-list> ')'
 
 Ritorna una lista di campi standardizzati.
 
-### VALIDATE-FIELD
+## VALIDATE-FIELD
 Utilizzata come funzione helper da recursive-validate-fields.
 Dato un campo non standardizzato, lo riscrive in una forma standard, dopo aver controllato la sua validità.
 
@@ -77,7 +77,7 @@ Sintassi: '(' validate-field <field> ')'
 
 Ritorna il campo riscritto in una forma standard.
 
-### INHERIT-FIELD-TYPE
+## INHERIT-FIELD-TYPE
 Data una lista di campi standardizzati e una lista di campi standardizzati ereditati, eredita i tipi dei campi.
 Un campo non può definire un tipo più ampio dello stesso campo ereditato.
 
@@ -85,14 +85,14 @@ Sintassi: '(' inherit-field-type <fields-list> <parents-fields-list> ')'
 
 Ritorna la lista di campi riscritta in modo da aver ereditato i tipi dalla lista di campi parent.
 
-### GET-METHODS
+## GET-METHODS
 Data una lista di parti (metodi + campi) estrae tutti i metodi, dopo aver creato le funzioni trampolino e averli riscritti come funzioni lambda.
 
 Sintassi: '(' get-methods <parts-list> ')'
 
 Ritorna una lista contenente i nomi dei metodi e le rispettive funzioni lambda.
 
-### RECURSIVE-PROCESS-METHODS
+## RECURSIVE-PROCESS-METHODS
 Usata come funzione helper da get-methods.
 Data una lista di metodi, processa ogni metodo.
 
@@ -100,7 +100,7 @@ Sintassi: '(' recursive-process-methods <methods-list> ')'
 
 Ritorna una lista contenente i nomi dei metodi e le rispettive funzioni lambda associate.
 
-### PROCESS-METHOD
+## PROCESS-METHOD
 Usata come funzione helper da recursive-process-methods.
 Dato un metodo, crea la sua funzione trampolino e lo riscrive come una funzione lambda.
 
@@ -108,7 +108,7 @@ Sintassi: '(' process-method <method-name> <method-spec> ')'
 
 Ritorna una lista di due elementi, il cui primo elemento è il nome del metodo e il secondo è la funzione lambda associata.
 
-### REWRITE-METHOD-CODE
+## REWRITE-METHOD-CODE
 Usata come funzione helper da process-method.
 Riscrive un metodo come una funzione lambda, a cui viene aggiunto un parametro this.
 
@@ -116,7 +116,7 @@ Sintassi: '('rewrite-method-code <method-name> <method-spec> ')'
 
 Ritorna una lista di due elementi, il cui primo elemento è il nome del metodo e il secondo è la funzione lambda associata.
 
-### INVOKE-METHOD
+## INVOKE-METHOD
 Funzione eseguita quando viene chiamato un trampolino.
 Si occupa di selezionare il migliore metodo da eseguire per una certa istanza, tenendo conto dell'ereditarietà.
 
@@ -124,7 +124,7 @@ Sintassi: '(' invoke-method <instance> <method-name> ')'
 
 Ritorna la funzione lambda considerata migliore.
 
-### UPDATE-FIELDS
+## UPDATE-FIELDS
 Usata come funzione helper da make.
 Si occupa di inizializzare i campi di un'istanza con i valori specificati alla chiamata di make.
 
@@ -132,7 +132,7 @@ Sintassi: '(' update-fields <fields-list> [<field-name> <initializer-value>]* ')
 
 Ritorna la lista dei campi di un'istanza inizializzati con i valori specificati.
 
-### UPDATE-FIELD
+## UPDATE-FIELD
 Usata come funzione helper da update-fields.
 Estrae un campo da una lista di campi e lo inizializza al valore specificato.
 
@@ -140,27 +140,27 @@ Sintassi: '(' update-field <fields-list> (<field-name> <initializer-value>) ')'
 
 Ritorna la lista di campi dopo aver inizializzato il campo specificato.
 
-### INHERITE-FIELDS-FROM-PARENTS
+## INHERITE-FIELDS-FROM-PARENTS
 Eredita correttamente tutti i campi da una lista di classi parent.
 
 Sintassi: '(' inherite-fields-from-parents <parents-list> ')'
 
 Ritorna una lista contenente tutti i campi ereditati.
 
-### APPEND-FIELDS-LISTS
+## APPEND-FIELDS-LISTS
 Usato come funzione helper per l'ereditarietà.
 Date due liste di campi, aggiuge alla prima lista tutti i campi della seconda lista che non sono già presenti.
 
 Sintassi: '(' append-fields-lists <first-fields-list> <second-fields-list> ')'
 
-### IS-SUBTYPE-OF
+## IS-SUBTYPE-OF
 Verifica che un tipo è sottotipo di un altro.
 
 Sintassi: '(' is-subtype-of <subtype> <type> ')'
 
 Ritorna true se <subtype> è sottotipo di <type>, false altrimenti.
 
-### IS-DERIVATED-CLASS
+## IS-DERIVATED-CLASS
 Usata come funzione helper da is-subtype-of.
 Data una lista di classi, verifica che almeno una di esse sia derivata dalla classe parent.
 
@@ -168,21 +168,21 @@ Sintassi: '(' is-derivated-class <classes-list> <parent-class> ')'
 
 Ritorna true se almeno una classe discende dalla classe parent, false altrimenti.
 
-### PARENTS-METHOD
+## PARENTS-METHOD
 Data una lista di classi parent, estrae il miglior metodo che si vuole richiamare.
 
 Sintassi: '(' parents-method <parents-list> <method-name> ')'
 
 Ritorna la funzione lambda del metodo richiamato.
 
-### METHOD-IN-METHODS-LIST
+## METHOD-IN-METHODS-LIST
 Estrae da una lista di metodi il metodo di nome specificato, se presente.
 
 Sintassi: '(' method-in-methods-list <method-name> <methods-list> ')'
 
 Ritorna una lista di due elementi, il cui primo elemento è il nome del metodo e il secondo la funzione lambda associata.
 
-### FIELD-IN-FIELDS-LIST
+## FIELD-IN-FIELDS-LIST
 Estrae da una lista di campi il campo di nome specificato, se presente.
 
 Sintassi: '(' field-in-fields-list <field-name> <fields-list> ')'

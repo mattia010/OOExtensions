@@ -40,7 +40,8 @@
   (cond ((and (equal (length args) 1)
 	      (listp (car args))
 	      (equal (length (car args)) 3)
-	      (equal (caar args) 'oolinst))
+	      (equal (caar args) 'oolinst)
+	      (is-subtype-of (cadar args) class-name))
 	 (if (is-subtype-of (cadar args) class-name)
 	     (list 'oolinst class-name (caddar args))
 	     (error "Args not valid for the specified type.")))
@@ -70,18 +71,29 @@
 ;;; istanza di una certa classe.
 (defun is-instance (instance &optional (class T))
   (if (and (listp instance)
-	   (equal (car instance) 'oolinst))
-      (if (equal class T)
-	  (or (is-class (cadr instance))
-	      (subtypep (type-of (caddr instance)) (cadr instance)))
-	  (and (is-subtype-of (cadr instance) class)
-	       (or (is-class (cadr instance))
-		   (subtypep (type-of (caddr instance)) (cadr instance)))))
-      (subtypep (type-of instance) class)))
+	   (equal (length instance) 3)
+	   (equal (car instance) 'oolinst)
+	   (is-subtype-of (cadr instance) class))
+      (if (is-class (cadr instance))
+	  (is-instance-helper (cddr instance))
+	  (is-subtype-of (type-of (caddr instance)) (cadr instance)))
+      (is-subtype-of (type-of instance) class)))
+
+;;; Funzione helper per usare la ricorsione sulla lista di campi
+(defun is-instance-helper (fields-list)
+  (cond ((equal (length fields-list) 1)
+	 (is-instance (car fields-list)))
+	((is-instance (car fields-list))
+	 (is-instance-helper (cdr fields-list)))
+	(T NIL)))
+
 
 ;;; Estrae da un'istanza il valore del campo specificato.
 (defun field (instance field)
-  (if (is-instance instance)
+  (if (and (is-instance instance)
+	   (listp instance)
+	   (equal (length instance) 3)
+	   (equal (car instance) 'oolinst))
       (if (field-in-fields-list (symbol-name field) (caddr instance))
 	  (field-in-fields-list (symbol-name field) (caddr instance))
 	  (error "unknown field."))
@@ -90,12 +102,18 @@
 ;;; Estrae da un'istanza il valore di un campo, dopo aver percorso una
 ;;; lista di attributi.
 (defun field* (instance &rest fields-name-list)
-  (if (not (equal (length fields-name-list) 0))
-      (cond ((equal (length fields-name-list) 1)
-	     (field instance (car fields-name-list)))
-	    (T (field* (field instance (car fields-name-list))
-		       (cdr fields-name-list))))
-      (error "List of fields name is empty")))
+  (if (and (is-instance instance)
+	   (listp instance)
+	   (equal (length instance) 3)
+	   (equal (car instance) 'oolinst))
+      (if (not (equal (length fields-name-list) 0))
+	  (cond ((equal (length fields-name-list) 1)
+		 (field instance (car fields-name-list)))
+		(T (apply #'field*
+			  (field instance (car fields-name-list))
+			  (cdr fields-name-list))))
+	  (error "List of fields name is empty"))
+      (error "Instance not valid!")))
 				  
 ;;; Data una lista di parti, estrae tutti i campi.
 (defun get-fields (parts)
@@ -131,20 +149,28 @@
 	 (if (is-instance (list 'oolinst
 				(cadadr (car parents-fields-list))
 				(caddr (cadr (car fields-list)))))
-	     (append (list (list (caar fields-list)
+	     (let ((new-field
+		    (append
+		     (list (list (caar fields-list)
 				 (list 'oolinst
 				       (cadadr (car parents-fields-list))
 				       (caddr (cadr (car fields-list))))))
 		     (inherit-field-type (cdr fields-list)
-					 (cdr parents-fields-list)))
+					 (cdr parents-fields-list)))))
+	       (if (is-instance new-field)
+		   new-field
+		   (error "Invalid value for a field")))
 	     (error "Invalid value for a field.")))
 	((equal (caar fields-list) (caar parents-fields-list))
 	 (if (is-subtype-of (cadadr (car fields-list))
 			    (cadadr (car parents-fields-list)))
-	     (append (list (car fields-list))
-		     (inherit-field-type
-		      (cdr fields-list)
-		      (cdr parents-fields-list)))
+	     (let ((new-field (append (list (car fields-list))
+				      (inherit-field-type
+				       (cdr fields-list)
+				       (cdr parents-fields-list)))))
+	       (if (is-instance new-field)
+		   new-field
+		   (error "Invalid value for a field")))
 	     (error "A field type is supertype of an inherited one")))
 	(T (append (inherit-field-type (list (car fields-list))
 				       (cdr parents-fields-list))
@@ -238,7 +264,10 @@
   (cond ((equal parent-class 'T) T)
 	((equal subclass parent-class) T)
 	((is-derivated-class (list subclass) parent-class) T)
-	((subtypep subclass parent-class) T)))
+	((and (not (is-class subclass))
+	      (not (is-class parent-class))
+	      (subtypep subclass parent-class))
+	 T)))
 
 ;;; Verifica se almeno una classe presente nella lista di classi deriva
 ;;; dalla classe parent.

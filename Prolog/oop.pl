@@ -19,6 +19,8 @@ def_class(ClassName, Parents, Parts) :-
     standardize_methods(TmpMethods, StandardMethods),
     inherit(Parents, InheritedFields, _),
     inherit_field_type(StandardFields, InheritedFields, FinalFields),
+    forall(member(field(_, Inst), FinalFields),
+	   is_instance(Inst)),
     assert_trampolines(StandardMethods),
     asserta(class(ClassName, Parents, FinalFields, StandardMethods)).
 
@@ -311,11 +313,20 @@ is_class(Name) :-
 inst(Ptr, Obj) :- point_to(Ptr, Obj).
 
 %%% Verifica se l'oggetto è istanza di un certo tipo.
+is_instance(Ptr, Type) :-
+    point_to(Ptr, Inst),
+    !,
+    is_instance(Inst, Type).
 is_instance(object(Type1, Value), Type2) :-
+    !,
     is_subtype_of(Type1, Type2),
     is_instance(object(Type1, Value)).
 
 %%% Verifica se l'istanza è valida.
+is_instance(Ptr) :-
+    point_to(Ptr, Inst),
+    !,
+    is_instance(Inst).
 is_instance(object(void, _)) :- !.
 is_instance(object(number, X)) :- !, number(X).
 is_instance(object(rational, X)) :- !, rational(X).
@@ -332,7 +343,9 @@ is_instance(object(Type, Fields)) :-
     class(Type, _, _, _),
     inherit([Type], ClassFields, _),
     forall(member(field(Name, _), Fields),
-	   member(field(Name, _), ClassFields)).
+	   member(field(Name, _), ClassFields)),
+    forall(member(field(_, Inst), Fields),
+	   is_instance(Inst)).
 %%% Verifica se un tipo è sottotipo di un altro.
 is_subtype_of(X, X) :- !.
 is_subtype_of(float, number) :- !.
@@ -340,18 +353,24 @@ is_subtype_of(rational, float) :- !.
 is_subtype_of(integer, rational) :- !.
 is_subtype_of(string, atom) :- !.
 is_subtype_of(Class, ParentClass) :-
-    class(Class, Parents, _, _),
+    class(Class, _, _, _),
     !,
-    helper_is_subtype_of(Parents, ParentClass).
+    helper_is_subtype_of([Class], ParentsList),
+    member(ParentClass, ParentsList),
+    !.
 
 %%% Helper usato per scorrere le liste di parent.
-helper_is_subtype_of([X | _], Class) :-
-    is_subtype_of(X, Class),
-    !.
-helper_is_subtype_of([X | Xs], Class) :-
-    \+ is_subtype_of(X, Class),
+helper_is_subtype_of([], []) :- !.
+helper_is_subtype_of([Class], [Class | Result]) :-
     !,
-    helper_is_subtype_of(Xs, Class).
+    class(Class, ParentsList, _, _),
+    helper_is_subtype_of(ParentsList, Result).
+helper_is_subtype_of([Class | Rest], Result) :-
+    Rest \= [],
+    !,
+    helper_is_subtype_of([Class], Tmp1),
+    helper_is_subtype_of(Rest, Tmp2),
+    append(Tmp1, Tmp2, Result).
 
 %%% Verifica se un tipo è built-in
 is_builtin(void).

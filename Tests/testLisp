@@ -1,0 +1,95 @@
+(def-class 'person nil '(fields (name "Eve") (age 21 integer)))
+(def-class 'student '(person) '(fields (name "Eva Lu Ator") 
+                                        (university "Berkeley" string))
+                                '(methods (talk (&optional (out *standard-output*)) 
+                                                (format out "My name is ~A~%My age is ~D~%" (field this 'name) (field this 'age)))))
+(def-class 'studente-bicocca '(student) '(methods (talk () (format t "Mi chiamo ~A, e studio alla Bicocca~%" (field this 'name)))) 
+                                        '(fields (university "UNIMIB")))
+(def-class 'superhero '(person) '(fields (age 4092)))
+(def-class 'doctor '(person))
+(def-class 'fictional-character '(person) '(fields (age 60)))
+(def-class 'time-lord '(doctor superhero fictional-character))
+(def-class 'using-integers () '(fields (x 42 integer)))
+
+(defparameter eve (make 'person))
+(defparameter adam (make 'person 'name "Adam"))
+(defparameter s1 (make 'student 'name "Eduardo De Filippo" 'age 108))
+(defparameter s2 (make 'student))
+(defparameter ernesto (make 'studente-bicocca 'name "Ernesto"))
+
+(equal (field eve 'age) 21)
+(equal (field s1 'age) 108)
+(equal (field s2 'name) "Eva Lu Ator")
+
+(talk s1)
+(talk ernesto)
+
+(defparameter the-doctor (make 'time-lord :name "Dr. Who"))
+(equal (field the-doctor :age) 21)
+
+(equal (is-class 'superhero) 'T)
+(equal (is-class 'person) 'T)
+(equal (is-class 'time-lord) 'T)
+(equal (is-class s1) NIL)
+(equal (is-class 'the-doctor) NIL)
+
+(def-class 'encapsule nil (list 'fields (list 'campo1 (make 'doctor) 'doctor) 
+                                    (list 'campo2 (make 'student s2) 'student)))
+(defparameter enc (make 'encapsule))
+(equal (field* enc 'campo1 'name) "Eve")
+(equal (field* enc 'campo2 'name) "Eva Lu Ator")
+(equal (field* enc 'campo2 'university) "Berkeley")
+
+
+
+(equal (is-instance s1) 'T)
+(equal (is-instance ernesto 'studente-bicocca) 'T)
+(equal (is-instance ernesto 'person) 'T)
+(equal (is-instance "cds" 'integer) NIL)
+(equal (is-instance "instanza") T)
+(equal (is-instance 32 'string) NIL)
+(equal (is-instance 'cdaa 'person) NIL)
+
+(defparameter s3 (make 'student 'age "42")) //da errore voluto
+(field eve 'address)    //errore voluto
+(talk eve)    //da errore voluto
+(def-class 'using-reals '(using-integers) '(fields (x 42.0)))  //da errore voluto
+(make 'using-integers :x "42") //da errore voluto
+
+
+____________________________________________________________________
+
+(def-class 'person nil '(fields (name "Eve") (age 21 integer)))
+(def-class 'student '(person) '(fields (name "Eva Lu Ator") (univerisity "Berkeley")))
+
+(defparameter eve (make 'person))
+(defparameter adam (make 'person 'name "Adam"))
+(defparameter s1 (make 'student 'name "Eduardo" :age 108))
+(defparameter s2 (make 'student))
+
+(equal (field s1 'name) "Eduardo")
+(equal (field s1 :age) 108)
+(equal (field adam :name) "Adam")
+(equal (field s2 'name) "Eva Lu Ator")
+(equal (field s2 :age) 21)
+(equal (field eve :name) "Eve")
+
+(def-class 'studente-bicocca '(student) '(fields (univerisity "UNIMIB")))
+(def-class 'tmp1 '(studente-bicocca))
+
+(defparameter w1 (make 'studente-bicocca))
+(defparameter w2 (make 'tmp1))
+(equal (field w2 'univerisity) "UNIMIB")
+(defparameter aser (make 'student))
+
+(def-class 'rospo nil (list 'fields (list 'campo w1 'studente-bicocca) 
+                                        (list 'campo2 aser 'student)))
+(defparameter a3 (make 'rospo))
+(is-instance a3)
+(is-instance w1 'student)
+(is-instance w2 'student)
+(equal (field* a3 'campo 'name) "Eva Lu Ator")
+(is-class 'student)
+(is-class 'rospo)
+(equal (is-class 'assdf) NIL)
+

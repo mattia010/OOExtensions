@@ -114,7 +114,7 @@
 			  (cdr fields-name-list))))
 	  (error "List of fields name is empty"))
       (error "Instance not valid!")))
-				  
+
 ;;; Data una lista di parti, estrae tutti i campi.
 (defun get-fields (parts)
   (cond ((null parts) '())

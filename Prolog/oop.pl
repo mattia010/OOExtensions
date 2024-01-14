@@ -45,19 +45,19 @@ get_methods_and_fields([Method | Rest],
 standardize_fields([], []) :- !.
 standardize_fields([field(Name, Value) | Rest],
 		   [field(Name, Obj) | StandardRest]) :-
-    \+ is_instance(Value),
+    Value \= object(_, _),
     !,
     new(void, Value, Obj),
     standardize_fields(Rest, StandardRest).
 standardize_fields([field(Name, Value, Type) | Rest],
 		   [field(Name, Obj) | StandardRest]) :-
-    \+ is_instance(Value),
+    Value \= object(_, _),
     !,
     new(Type, Value, Obj),
     standardize_fields(Rest, StandardRest).
 standardize_fields([field(Name, object(X, Y)) | Rest],
 		   [field(Name, object(X, Y)) | StandardRest]) :-
-    is_instance(X, Y),
+    is_instance(object(X, Y)),
     !,
     standardize_fields(Rest, StandardRest).
 standardize_fields([field(Name, object(Type1, Value), Type2) | Rest],
@@ -273,10 +273,6 @@ init_fields([field(FieldName1, Obj) | FieldsRest],
 %%% Estrae il valore del campo di un'istanza. Se il campo è di tipo
 %%% built-in verrà ritornato il suo valore, se invece è del tipo di una
 %%% classe verrà ritornata l'istanza.
-field(Ptr, Name, Value) :-
-    inst(Ptr, Obj),
-    !,
-    field(Obj, Name, Value).
 field(object(_, [field(Name, object(Class, Value)) | _]),
       Name,
       object(Class, Value)) :-
@@ -291,11 +287,6 @@ field(object(_, [field(FieldName, _) | FieldsRest]), Name, Value) :-
     field(object(_, FieldsRest), Name, Value).
 
 %%% Restituisce il valore di un campo percorrendo una lista di campi.
-fieldx(InstanceName, FieldNames, Result) :-
-    inst(InstanceName, Obj),
-    InstanceName \= object(_, _),
-    !,
-    fieldx(Obj, FieldNames,  Result).
 fieldx(object(Type, Value), [FieldName], Result) :-
     !,
     field(object(Type, Value), FieldName, Result).
@@ -313,20 +304,16 @@ is_class(Name) :-
 inst(Ptr, Obj) :- point_to(Ptr, Obj).
 
 %%% Verifica se l'oggetto è istanza di un certo tipo.
-is_instance(Ptr, Type) :-
-    point_to(Ptr, Inst),
-    !,
-    is_instance(Inst, Type).
 is_instance(object(Type1, Value), Type2) :-
     !,
     is_subtype_of(Type1, Type2),
     is_instance(object(Type1, Value)).
+is_instance(NonObj, Type) :-
+    NonObj \= object(_, _),
+    !,
+    is_instance(object(Type, NonObj)).
 
 %%% Verifica se l'istanza è valida.
-is_instance(Ptr) :-
-    point_to(Ptr, Inst),
-    !,
-    is_instance(Inst).
 is_instance(object(void, _)) :- !.
 is_instance(object(number, X)) :- !, number(X).
 is_instance(object(rational, X)) :- !, rational(X).
@@ -341,11 +328,22 @@ is_instance(object(Type, Fields)) :-
     \+ is_builtin(Type),
     !,
     class(Type, _, _, _),
+    is_list(Fields),
+    forall(member(X, Fields),
+	   X = field(_, _)),
+    forall(member(field(_, Obj), Fields),
+	   is_instance(Obj)),
     inherit([Type], ClassFields, _),
     forall(member(field(Name, _), Fields),
-	   member(field(Name, _), ClassFields)),
-    forall(member(field(_, Inst), Fields),
-	   is_instance(Inst)).
+	   member(field(Name, _), ClassFields)).
+is_instance(NonObj) :-
+    NonObj \= object(_, _),
+    !,
+    is_builtin(Type),
+    Type \= void,
+    is_instance(object(Type, NonObj)),
+    !.
+
 %%% Verifica se un tipo è sottotipo di un altro.
 is_subtype_of(X, X) :- !.
 is_subtype_of(float, number) :- !.
@@ -447,5 +445,3 @@ get_method_from_methods_list(MethodName,
     Functor \= MethodName,
     !,
     get_method_from_methods_list(MethodName, Rest, Result).
-    
-

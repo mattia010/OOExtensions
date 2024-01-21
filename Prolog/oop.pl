@@ -134,8 +134,14 @@ inherit_field_type([field(FieldName1, Obj1) | FieldsRest1],
 %%% a cui viene assegnato un nome.
 make(Name, Type) :-
     ground(Name),
+    point_to(Name, _),
     !,
+    retractall(point_to(Name, _)),
+    make(Name, Type).
+make(Name, Type) :-
+    ground(Name),
     \+ point_to(Name, _),
+    !,
     new(Type, Obj),
     asserta(point_to(Name, Obj)).
 make(Name, Type) :-
@@ -152,8 +158,14 @@ make(Name, Type) :-
 %%% all'istanza.
 make(Name, Type, Params) :-
     ground(Name),
+    point_to(Name, _),
     !,
+    retractall(point_to(Name, _)),
+    make(Name, Type, Params).
+make(Name, Type, Params) :-
+    ground(Name),
     \+ point_to(Name, _),
+    !,
     new(Type, Params, Obj),
     asserta(point_to(Name, Obj)).
 make(Name, Type, Params) :-
@@ -273,6 +285,11 @@ init_fields([field(FieldName1, Obj) | FieldsRest],
 %%% Estrae il valore del campo di un'istanza. Se il campo è di tipo
 %%% built-in verrà ritornato il suo valore, se invece è del tipo di una
 %%% classe verrà ritornata l'istanza.
+field(Ptr, Name, Result) :-
+    Ptr \= object(_, _),
+    !,
+    point_to(Ptr, Obj),
+    field(Obj, Name, Result).    
 field(object(_, [field(Name, object(Class, Value)) | _]),
       Name,
       object(Class, Value)) :-
@@ -287,6 +304,11 @@ field(object(_, [field(FieldName, _) | FieldsRest]), Name, Value) :-
     field(object(_, FieldsRest), Name, Value).
 
 %%% Restituisce il valore di un campo percorrendo una lista di campi.
+fieldx(Ptr, FieldsList, Result) :-
+    Ptr \= object(_, _),
+    !,
+    point_to(Ptr, Obj),
+    fieldx(Obj, FieldsList, Result).
 fieldx(object(Type, Value), [FieldName], Result) :-
     !,
     field(object(Type, Value), FieldName, Result).
@@ -385,16 +407,17 @@ is_builtin(integer).
 assert_trampolines([]).
 assert_trampolines([(Head :- _) | Rest]) :-
     Head =.. [Name | Args],
-    functor(Head, Name,  Arity),
+    functor(Head, Name, Arity),
     abolish(Name, Arity),
     asserta((Head :- invoke_method(Name, Args))),
     assert_trampolines(Rest).
 
 %%% Esegue il metodo di un'istanza.
 invoke_method(Name, [Ptr | Args]) :-
-    inst(Ptr, Instance),
+    Ptr \= object(_, _),
     !,
-    invoke_method(Name, [Instance | Args]).
+    point_to(Ptr, Obj),
+    invoke_method(Name, [Obj | Args]).
 invoke_method(Name, [object(Type, Value) | Args]) :-
     get_best_method([Type], Name, (Head :- Body)),
     asserta((Head :- Body)),
